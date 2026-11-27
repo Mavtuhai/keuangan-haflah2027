@@ -135,7 +135,7 @@ function deptView(d){
   const tabs=`<div class="tabs"><button class="${tab==="tx"?"":"g"}" data-t="tx">Transaksi</button><button class="${tab==="rab"?"":"g"}" data-t="rab">RAB</button><button class="${tab==="log"?"":"g"}" data-t="log">Log</button><button class="g" data-x="${tab==="rab"?"rab":"dept"}:${d}">Ekspor</button></div>`;
   if(tab==="rab")return rabView(d,tabs);
   return `<div class="card"><label>Saldo ${esc(NAME[d])}</label><div class="saldo ${s<0?"neg":""}">${rp(s)}</div>
-  <div class="row" style="margin-top:10px"><button data-n="in">+ Pemasukan</button><button data-n="out" style="background:var(--rd);color:#fff">− Pengeluaran</button></div></div>`+tabs+
+  <div class="row" style="margin-top:10px"><button data-n="in">+ History</button><button data-n="out" style="background:var(--rd);color:#fff">− Pengeluaran</button></div></div>`+tabs+
   `<div class="card">${tab==="tx"?(list.map(t=>txRow(t,me===d||me==="adm")).join("")||"<small>Belum ada transaksi.</small>"):logRows(lg)}</div>`}
 function adminView(){
   const tot=live().filter(t=>t.dept!=="adm"&&t.kind==="out").reduce((a,t)=>a+t.jumlah,0),inc=live().filter(t=>t.dept==="adm"&&t.kind==="in").reduce((a,t)=>a+t.jumlah,0);
