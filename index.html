@@ -135,11 +135,11 @@ function deptView(d){
   const tabs=`<div class="tabs"><button class="${tab==="tx"?"":"g"}" data-t="tx">Transaksi</button><button class="${tab==="rab"?"":"g"}" data-t="rab">RAB</button><button class="${tab==="log"?"":"g"}" data-t="log">Log</button><button class="g" data-x="${tab==="rab"?"rab":"dept"}:${d}">Ekspor</button></div>`;
   if(tab==="rab")return rabView(d,tabs);
   return `<div class="card"><label>Saldo ${esc(NAME[d])}</label><div class="saldo ${s<0?"neg":""}">${rp(s)}</div>
-  <div class="row" style="margin-top:10px"><button data-n="in">+ History</button><button data-n="out" style="background:var(--rd);color:#fff">− Pengeluaran</button></div></div>`+tabs+
+  <div class="row" style="margin-top:10px"><button data-n="in">+ Pemasukan</button><button data-n="out" style="background:var(--rd);color:#fff">− Pengeluaran</button></div></div>`+tabs+
   `<div class="card">${tab==="tx"?(list.map(t=>txRow(t,me===d||me==="adm")).join("")||"<small>Belum ada transaksi.</small>"):logRows(lg)}</div>`}
 function adminView(){
   const tot=live().filter(t=>t.dept!=="adm"&&t.kind==="out").reduce((a,t)=>a+t.jumlah,0),inc=live().filter(t=>t.dept==="adm"&&t.kind==="in").reduce((a,t)=>a+t.jumlah,0);
-  const tabs=`<div class="tabs"><button class="${view==="home"?"":"g"}" data-v="home">Beranda</button><button class="${view==="in"?"":"g"}" data-v="in">Pemasukan</button><button class="${view==="rab"?"":"g"}" data-v="rab">RAB</button><button class="${view==="log"?"":"g"}" data-v="log">Log</button><button class="g" data-x="lpj">Ekspor File</button></div>`;
+  const tabs=`<div class="tabs"><button class="${view==="home"?"":"g"}" data-v="home">Beranda</button><button class="${view==="in"?"":"g"}" data-v="in">History</button><button class="${view==="rab"?"":"g"}" data-v="rab">RAB</button><button class="${view==="log"?"":"g"}" data-v="log">Log</button><button class="g" data-x="lpj">Ekspor File</button></div>`;
   if(view==="home")return tabs+`<div class="card"><label>Saldo Utama</label><div class="saldo ${saldo("adm")<0?"neg":""}">${rp(saldo("adm"))}</div>
   <div class="row" style="margin-top:10px"><button data-n="adm-in">+ Pemasukan umum</button><button data-n="tf" class="g">Transfer saldo</button></div></div>
   <div class="card"><h2>Saldo departemen</h2>${DEPT.map(d=>{const s=saldo(d[0]);return `<div class="tx"><span>${d[1]}</span><span style="display:flex;gap:8px;align-items:center"><b class="${s<0?"neg":""}">${rp(s)}</b><button class="g s" data-o="${d[0]}">Buka</button><button class="g s" data-rs="${d[0]}">Reset pola</button></span></div>`}).join("")}</div>
