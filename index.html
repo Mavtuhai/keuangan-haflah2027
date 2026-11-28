@@ -130,7 +130,7 @@ function rabView(d,tabs){
   const adm=me==="adm",open=!!RA[d],can=adm||(me===d&&open);
   const items=RB.filter(x=>x.dept===d&&(adm||!x.del)),tot=items.filter(x=>!x.del).reduce((a,x)=>a+x.jumlah,0);
   const st=adm?`<small>Akses pengisian oleh departemen: <b>${open?"DIBUKA":"DITUTUP"}</b></small> <button class="g s" data-ra="${d}">${open?"Tutup":"Buka"}</button>`:(open?'<small class="in">Pengisian RAB sedang dibuka oleh admin.</small>':'<div class="ban">Pengisian RAB sedang ditutup oleh admin. Anda hanya bisa melihat.</div>');
-  return `<div class="card"><label>Total RAB ${esc(NAME[d])}</label><div class="saldo">${rp(tot)}</div><small>Rencana saja, tidak mengurangi saldo.</small><div style="margin-top:8px">${st}</div>${can?`<div class="row" style="margin-top:10px"><button data-rn="1">+ Tambah RAB</button></div>`:""}</div>`+tabs+`<div class="card">${items.map(x=>rabRow(x,can)).join("")||"<small>Belum ada rencana.</small>"}</div>`}
+  return `<div class="card"><label>Total RAB ${esc(NAME[d])}</label><div class="saldo">${rp(tot)}</div><small>Segera di isi RABnya.</small><div style="margin-top:8px">${st}</div>${can?`<div class="row" style="margin-top:10px"><button data-rn="1">+ Tambah RAB</button></div>`:""}</div>`+tabs+`<div class="card">${items.map(x=>rabRow(x,can)).join("")||"<small>Belum ada rencana.</small>"}</div>`}
 function deptView(d){
   const list=TX.filter(t=>(t.dept===d||(t.kind==="tf"&&t.to===d))&&(me==="adm"||!t.del)),s=saldo(d);
   const lg=LOG.filter(x=>x.dept===d||x.dept2===d);
