@@ -91,11 +91,11 @@ let lsel="adm",pat=[],lmsg="";
 function loginView(){
   const has=!!PW[lsel];
   return `<div class="card"><h1>Keuangan Haflah 2027</h1><small style="color:var(--mu)">Pondok Pesantren Al Ma’rufiyyah</small>
-  <label>Akun</label><select id="sel">${ACC.map(a=>`<option value="${a[0]}" ${a[0]===lsel?"selected":""}>${a[1]}</option>`).join("")}</select>
+  <label></label><select id="sel">${ACC.map(a=>`<option value="${a[0]}" ${a[0]===lsel?"selected":""}>${a[1]}</option>`).join("")}</select>
   <p style="text-align:center;margin:8px 0 0">Gambar pola untuk masuk</p>
   <div class="pat" id="pat">${dots()}</div>
   <div class="msg" id="lm">${esc(lmsg)}</div>
-  <p style="color:var(--mu);font-size:12px;text-align:center">Sesi login berlaku 12 jam. Lupa pola? Minta admin mereset.</p></div>`}
+  <p style="color:var(--mu);font-size:12px;text-align:center">Lupa pola? Minta admin mereset.</p></div>`}
 function drawPattern(box,cb){let down=false,pat=[];
   const hit=e=>{const el=document.elementFromPoint(e.clientX,e.clientY)?.closest(".dot");if(el&&box.contains(el)){const i=+el.dataset.i;if(!pat.includes(i)){pat.push(i);el.classList.add("on")}}};
   box.onpointerdown=e=>{down=true;pat=[];box.querySelectorAll(".dot").forEach(d=>d.classList.remove("on"));hit(e)};
