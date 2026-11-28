@@ -166,7 +166,7 @@ function openForm(kind,ctx,old){
   const isTf=kind==="tf",needFoto=!isTf&&!(ctx==="adm"&&kind==="in"&&false);
   const m=document.createElement("div");m.className="modal";
   m.innerHTML=`<div><h2>${isTf?(old?"Edit transfer saldo":"Transfer saldo"):(old?"Edit ":"")+(kind==="in"?"Pemasukan":"Pengeluaran")}</h2><form id="f" onsubmit="return false">
-  ${isTf?`<label>Ke departemen</label><select id="to">${DEPT.map(d=>`<option value="${d[0]}">${d[1]}</option>`).join("")}</select>`:""}
+  ${isTf?`<label>Ke Sie</label><select id="to">${DEPT.map(d=>`<option value="${d[0]}">${d[1]}</option>`).join("")}</select>`:""}
   <label>Tanggal</label><input id="dt" type="date" value="${old?.date||today()}">
   ${isTf?"":`<label>Rincian</label><input id="rn" value="${esc(old?.rincian||"")}" placeholder="Nama/uraian">
   <div class="row"><div><label>Item (qty)</label><input id="it" type="number" min="1" inputmode="numeric" value="${old?.item||1}"></div><div><label>Harga satuan</label><input id="hg" type="number" min="0" inputmode="numeric" value="${old?.harga||""}"></div></div>`}
