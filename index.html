@@ -55,14 +55,16 @@ const sq=()=>{try{localStorage.setItem("q",JSON.stringify(Q))}catch(e){}};
 async function W(col,id,data){if(col!=="tx")return;const x={id,data};if(!navigator.onLine){Q.push(x);sq();render();return}
   try{await pushTx(x);await load()}catch(e){if(!navigator.onLine||/fetch|network/i.test(e.message||"")){Q.push(x);sq();render()}else throw e}}
 async function flush(){if(!sb||!navigator.onLine||!Q.length)return;const q=Q;Q=[];sq();for(const x of q){try{await pushTx(x)}catch(e){if(/fetch|network/i.test(e.message||"")){Q.push(x)}else alert("Sinkron gagal: "+e.message)}}sq();await load()}
-async function upFoto(d){const blob=await (await fetch(d.foto)).blob(),f=new FormData();f.append("file",blob,"f.jpg");["dept","kind","date","rincian","jumlah"].forEach(k=>f.append(k,d[k]));
+async function upFoto(d){const blob=await (await fetch(d.foto)).blob(),f=new FormData();f.append("file",blob,"f.jpg");["dept","kind","date","rincian","jumlah"].forEach(k=>f.append(k,k==="dept"?(d.fdept||d.dept):d[k]));
   const r=await fetch(CFG.url+"/functions/v1/upload-foto",{method:"POST",headers:{apikey:CFG.anon,Authorization:"Bearer "+tok},body:f}),j=await r.json();if(!r.ok)throw new Error(j.error||"Unggah foto gagal");return j}
 async function pushTx(x){const d=x.data;let url=d.foto,file=d.drive?.file;if(url&&url.startsWith("data:")){const u=await upFoto(d);url=u.url;file=u.file}
-  const{error}=await sb.from("transactions").insert({client_id:x.id,dept:d.dept,kind:d.kind,to_dept:d.to||null,tx_date:d.date,rincian:d.rincian,item:d.item,harga:d.harga,foto_url:d.kind==="tf"?null:url,foto_file:file||null,created_by:me});
+  const{error}=await sb.from("transactions").insert({client_id:x.id,dept:d.dept,kind:d.kind,to_dept:d.to||null,tx_date:d.date,rincian:d.rincian,item:d.item,harga:d.harga,foto_url:url||null,foto_file:file||null,created_by:me});
   if(error&&error.code!=="23505")throw new Error(error.message)}
 async function upTx(id,d){let url=d.foto,file=d.drive?.file;if(url&&url.startsWith("data:")){const u=await upFoto(d);url=u.url;file=u.file}
   const{error}=await sb.from("transactions").update({tx_date:d.date,rincian:d.rincian,item:d.item,harga:d.harga,foto_url:url,foto_file:file}).eq("id",id);if(error)throw new Error(error.message);await load()}
-async function upTf(id,d){const{error}=await sb.from("transactions").update({to_dept:d.to,tx_date:d.date,harga:d.harga}).eq("id",id);if(error)throw new Error(error.message);await load()}
+async function upTf(id,d){const patch={to_dept:d.to,tx_date:d.date,harga:d.harga};
+  if(d.foto&&d.foto.startsWith("data:")){const u=await upFoto({foto:d.foto,dept:"adm",fdept:d.to,kind:"tf",date:d.date,rincian:"Transfer",jumlah:d.harga});patch.foto_url=u.url;patch.foto_file=u.file}
+  const{error}=await sb.from("transactions").update(patch).eq("id",id);if(error)throw new Error(error.message);await load()}
 const mapTx=r=>({id:r.id,dept:r.dept,kind:r.kind,to:r.to_dept,date:r.tx_date,rincian:r.rincian,item:r.item,harga:+r.harga,jumlah:+r.jumlah,foto:r.foto_url,drive:{folder:"HSN 2026/"+(NAME[r.dept]||r.dept),file:r.foto_file},fotoLama:r.foto_history||[],del:r.deleted,by:r.created_by,ts:+new Date(r.created_at)});
 const mapRab=r=>({id:r.id,dept:r.dept,date:r.tx_date,rincian:r.rincian,item:r.item,harga:+r.harga,jumlah:+r.jumlah,del:r.deleted});
 const mapLog=x=>{const a=x.after||{},b=x.before;let d;if(a.open!==undefined)d=a.open?"Pengisian RAB dibuka":"Pengisian RAB ditutup";else if(a.kind==="tf")d="Utama → "+NAME[a.to_dept]+" "+rp(+a.jumlah);else if(b&&(x.action==="edit"||x.action==="ganti foto"||x.action==="RAB edit"))d=`${b.rincian} ${rp(+b.jumlah)} → ${a.rincian} ${rp(+a.jumlah)}`;else d=`${a.rincian} ${rp(+a.jumlah)}`;return{id:x.id,catatan:x.catatan,detailEdit:x.detail_edit,ts:+new Date(x.at),by:x.actor,act:x.action,dept:x.dept,dept2:x.dept2,detail:d}};
@@ -121,7 +123,7 @@ function txRow(t,canEdit){
   const sign=t.kind==="in"||inc?"in":"out",lab=t.kind==="tf"?(inc?"Transfer masuk dari Admin":`Transfer → ${NAME[t.to]}`):t.rincian;
   const amt=(t.kind==="in"||inc?"+":"−")+rp(t.jumlah).replace("Rp ","");
   return `<div class="tx"><div>${t.foto?`<a href="#" data-foto="${t.id}" title="Buka foto bukti" style="float:left;margin-right:9px;font-size:22px;text-decoration:none">📷</a>`:""}<b>${esc(lab)}</b>${t.kind!=="tf"&&t.item?` <span class="tag">${t.item} × ${rp(t.harga).replace("Rp ","")}</span>`:""}<small>${t.date} · ${esc(NAME[t.dept]||t.dept)}${t.del?" · DIHAPUS":""}</small></div>
-  <div style="text-align:right"><b class="${t.kind==="tf"&&!inc?"":sign}">${amt}</b><br>${canEdit&&!t.del&&(t.kind!=="tf"||me==="adm")?`<button class="g s" data-e="${t.id}">Edit</button> <button class="r s" data-d="${t.id}">Hapus</button>`:""}${t.del&&me==="adm"?`<button class="g s" data-r="${t.id}">Kembalikan</button>`:""}</div></div>`}
+  <div style="text-align:right"><b class="${t.kind==="tf"&&!inc?"":sign}">${amt}</b><br>${canEdit&&!t.del&&(t.kind==="out"||me==="adm")?`<button class="g s" data-e="${t.id}">Edit</button> <button class="r s" data-d="${t.id}">Hapus</button>`:""}${t.del&&me==="adm"?`<button class="g s" data-r="${t.id}">Kembalikan</button>`:""}</div></div>`}
 function logRows(l){return l.map(x=>`<div class="tx"><div><b>${esc(x.act)}</b><small>${esc(x.detailEdit||x.detail)}${x.detailEdit?" (diedit)":""}</small>${x.catatan?`<small>📝 ${esc(x.catatan)}</small>`:""}</div><div style="text-align:right"><small>${esc(NAME[x.by]||x.by)}<br>${new Date(x.ts).toLocaleString("id-ID",{dateStyle:"short",timeStyle:"short"})}</small>${me==="adm"?`<br><button class="g s" data-le="${x.id}">Edit</button> <button class="g s" data-ln="${x.id}">Catatan</button> <button class="r s" data-ld="${x.id}">Hapus</button>`:""}</div></div>`).join("")||'<small>Belum ada log.</small>'}
 function rabRow(x,can){return `<div class="tx"><div><b>${esc(x.rincian)}</b> <span class="tag">${x.item} × ${rp(x.harga).replace("Rp ","")}</span><small>${x.date}${x.del?" · DIHAPUS":""}</small></div><div style="text-align:right"><b>${rp(x.jumlah).replace("Rp ","")}</b><br>${can&&!x.del?`<button class="g s" data-re="${x.id}">Edit</button> <button class="r s" data-rd="${x.id}">Hapus</button>`:""}${x.del&&me==="adm"?`<button class="g s" data-rr="${x.id}">Kembalikan</button>`:""}</div></div>`}
 function rabView(d,tabs){
@@ -135,11 +137,11 @@ function deptView(d){
   const tabs=`<div class="tabs"><button class="${tab==="tx"?"":"g"}" data-t="tx">Transaksi</button><button class="${tab==="rab"?"":"g"}" data-t="rab">RAB</button><button class="${tab==="log"?"":"g"}" data-t="log">Log</button><button class="g" data-x="${tab==="rab"?"rab":"dept"}:${d}">Ekspor</button></div>`;
   if(tab==="rab")return rabView(d,tabs);
   return `<div class="card"><label>Saldo ${esc(NAME[d])}</label><div class="saldo ${s<0?"neg":""}">${rp(s)}</div>
-  <div class="row" style="margin-top:10px"><button data-n="in">+ Pemasukan</button><button data-n="out" style="background:var(--rd);color:#fff">− Pengeluaran</button></div></div>`+tabs+
+  <div class="row" style="margin-top:10px">${me==="adm"?`<button data-n="in">+ Pemasukan</button>`:""}<button data-n="out" style="background:var(--rd);color:#fff">− Pengeluaran</button></div></div>`+tabs+
   `<div class="card">${tab==="tx"?(list.map(t=>txRow(t,me===d||me==="adm")).join("")||"<small>Belum ada transaksi.</small>"):logRows(lg)}</div>`}
 function adminView(){
   const tot=live().filter(t=>t.dept!=="adm"&&t.kind==="out").reduce((a,t)=>a+t.jumlah,0),inc=live().filter(t=>t.dept==="adm"&&t.kind==="in").reduce((a,t)=>a+t.jumlah,0);
-  const tabs=`<div class="tabs"><button class="${view==="home"?"":"g"}" data-v="home">Beranda</button><button class="${view==="in"?"":"g"}" data-v="in">History</button><button class="${view==="rab"?"":"g"}" data-v="rab">RAB</button><button class="${view==="log"?"":"g"}" data-v="log">Log</button><button class="g" data-x="lpj">Ekspor File</button></div>`;
+  const tabs=`<div class="tabs"><button class="${view==="home"?"":"g"}" data-v="home">Ringkasan</button><button class="${view==="in"?"":"g"}" data-v="in">Pemasukan</button><button class="${view==="rab"?"":"g"}" data-v="rab">RAB</button><button class="${view==="log"?"":"g"}" data-v="log">Log</button><button class="g" data-x="lpj">Ekspor LPJ</button></div>`;
   if(view==="home")return tabs+`<div class="card"><label>Saldo Utama</label><div class="saldo ${saldo("adm")<0?"neg":""}">${rp(saldo("adm"))}</div>
   <div class="row" style="margin-top:10px"><button data-n="adm-in">+ Pemasukan umum</button><button data-n="tf" class="g">Transfer saldo</button></div></div>
   <div class="card"><h2>Saldo departemen</h2>${DEPT.map(d=>{const s=saldo(d[0]);return `<div class="tx"><span>${d[1]}</span><span style="display:flex;gap:8px;align-items:center"><b class="${s<0?"neg":""}">${rp(s)}</b><button class="g s" data-o="${d[0]}">Buka</button><button class="g s" data-rs="${d[0]}">Reset pola</button></span></div>`}).join("")}</div>
@@ -160,6 +162,7 @@ function render(){
 /* ---------- Form ---------- */
 function compress(file,max=800,q=.6){return new Promise((res,rej)=>{const im=new Image(),u=URL.createObjectURL(file);im.onload=()=>{const r=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=im.width*r;c.height=im.height*r;c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);let o=c.toDataURL("image/jpeg",q);if(o.length>170000)o=c.toDataURL("image/jpeg",.4);res(o)};im.onerror=rej;im.src=u})}
 function openForm(kind,ctx,old){
+  if(kind==="in"&&me!=="adm")return;
   const isTf=kind==="tf",needFoto=!isTf&&!(ctx==="adm"&&kind==="in"&&false);
   const m=document.createElement("div");m.className="modal";
   m.innerHTML=`<div><h2>${isTf?(old?"Edit transfer saldo":"Transfer saldo"):(old?"Edit ":"")+(kind==="in"?"Pemasukan":"Pengeluaran")}</h2><form id="f" onsubmit="return false">
@@ -169,7 +172,7 @@ function openForm(kind,ctx,old){
   <div class="row"><div><label>Item (qty)</label><input id="it" type="number" min="1" inputmode="numeric" value="${old?.item||1}"></div><div><label>Harga satuan</label><input id="hg" type="number" min="0" inputmode="numeric" value="${old?.harga||""}"></div></div>`}
   ${isTf?`<label>Jumlah</label><input id="hg" type="number" min="1" inputmode="numeric" value="${old?.harga||""}">`:""}
   <b id="jm">Jumlah: Rp 0</b><div class="msg" id="fm"></div>
-  ${isTf?"":`<label>Foto bukti (wajib)</label>${old?.foto?'<small style="color:var(--mu)">Foto bukti sudah tersimpan. Pilih foto baru hanya untuk mengganti (foto lama tetap disimpan).</small>':""}<div class="row"><button type="button" class="g" id="bc">📷 Ambil foto</button><button type="button" class="g" id="bg">🖼 Dari galeri</button></div><input id="ft" type="file" accept="image/*" capture="environment" hidden><input id="fg" type="file" accept="image/*" hidden><img id="pv" hidden style="max-width:100%;border-radius:10px;margin-bottom:8px">`}
+  ${`<label>${isTf?"Bukti transfer (opsional, disarankan)":"Foto bukti (wajib)"}</label>${old?.foto?'<small style="color:var(--mu)">Foto bukti sudah tersimpan. Pilih foto baru hanya untuk mengganti (foto lama tetap disimpan).</small>':""}<div class="row"><button type="button" class="g" id="bc">📷 Ambil foto</button><button type="button" class="g" id="bg">🖼 Dari galeri</button></div><input id="ft" type="file" accept="image/*" capture="environment" hidden><input id="fg" type="file" accept="image/*" hidden><img id="pv" hidden style="max-width:100%;border-radius:10px;margin-bottom:8px">`}
   <div class="row"><button class="g" id="cx">Batal</button><button id="sv">Simpan</button></div></form></div>`;
   document.body.appendChild(m);if(isTf&&old)$("#to").value=old.to;
   let foto=old?.foto||null;
@@ -182,7 +185,7 @@ function openForm(kind,ctx,old){
     const j=calc(),fm=$("#fm");
     if(j<=0)return fm.textContent="Jumlah harus lebih dari 0";
     if(isTf){const av=saldo("adm")+(old?old.jumlah:0);if(j>av)return fm.textContent="Saldo utama tidak cukup ("+rp(av)+")";
-      const to=$("#to").value;if(old)await upTf(old.id,{to,date:$("#dt").value,harga:j});else await W("tx",uid(),{dept:"adm",kind:"tf",to,date:$("#dt").value,rincian:"Transfer",item:1,harga:j,jumlah:j,by:me,ts:Date.now()});
+      const to=$("#to").value;if(old)await upTf(old.id,{to,date:$("#dt").value,harga:j,foto});else await W("tx",uid(),{dept:"adm",kind:"tf",to,date:$("#dt").value,rincian:"Transfer",item:1,harga:j,jumlah:j,foto,fdept:to,by:me,ts:Date.now()});
       await addLog("transfer saldo","adm","Utama → "+NAME[to]+" "+rp(j));await addLog("terima transfer",to,"Dari Utama "+rp(j))}
     else{
       const rn=$("#rn").value.trim();if(!rn)return fm.textContent="Rincian wajib diisi";
@@ -236,7 +239,7 @@ function mk(D,f){
   return["doc",new Blob(["\ufeff"+h],{type:"application/msword"})]}
 function exportModal(x){
   const lpj=x==="lpj"||x==="rab-all",m=document.createElement("div");m.className="modal";
-  m.innerHTML=`<div><h2>${x==="lpj"?"Ekspor File":x==="rab-all"?"Ekspor RAB (semua departemen)":x.startsWith("rab:")?"Ekspor RAB "+esc(NAME[x.split(":")[1]]):"Ekspor laporan "+esc(NAME[x.split(":")[1]])}</h2>${lpj?'<label>Catatan / NB (opsional)</label><input id="nb" placeholder="Contoh: Masih ada yang belum membayar iuran">':""}<div class="msg" id="em"></div>
+  m.innerHTML=`<div><h2>${x==="lpj"?"Ekspor LPJ (format halaman 21–26)":x==="rab-all"?"Ekspor RAB (semua departemen)":x.startsWith("rab:")?"Ekspor RAB "+esc(NAME[x.split(":")[1]]):"Ekspor laporan "+esc(NAME[x.split(":")[1]])}</h2>${lpj?'<label>Catatan / NB (opsional)</label><input id="nb" placeholder="Contoh: Masih ada yang belum membayar iuran">':""}<div class="msg" id="em"></div>
   <div class="row" style="flex-wrap:wrap">${[["xlsx","Excel"],["pdf","PDF"],["doc","Word"],["csv","CSV"]].map(f=>`<button data-f="${f[0]}" style="min-width:45%;margin-bottom:8px">${f[1]}</button>`).join("")}</div><button class="g" id="cx" style="width:100%">Tutup</button></div>`;
   document.body.appendChild(m);$("#cx").onclick=()=>{m.remove();render()};
   m.querySelectorAll("[data-f]").forEach(b=>b.onclick=async()=>{try{const nbv=($("#nb")?.value||"").trim(),D=x==="lpj"?buildLpj(nbv):x==="rab-all"?buildRabAll(nbv):x.startsWith("rab:")?buildRab(x.split(":")[1]):buildDept(x.split(":")[1]);const[ext,blob]=mk(D,b.dataset.f),dl=BDL;await dl.save({filename:D.file+"."+ext,data:blob});$("#em").style.color="var(--pr)";$("#em").textContent="Diunduh: "+D.file+"."+ext}catch(e){$("#em").style.color="var(--rd)";$("#em").textContent=String(e?.message||e)}})}
@@ -249,6 +252,7 @@ document.addEventListener("click",async e=>{
   if(D.v){view=D.v;return render()}
   if(D.o){view="d:"+D.o;tab="tx";return render()}
   if(D.n==="adm-in")return openForm("in","adm");if(D.n==="tf")return openForm("tf","adm");
+  if(D.n==="in"&&me!=="adm")return;
   if(D.n)return openForm(D.n,ctx);
   const upd=async(tbl,id,patch)=>{const{error}=await sb.from(tbl).update(patch).eq("id",id);if(error)alert(error.message);return load()};
   if(D.ra){const{error}=await sb.from("rab_access").update({open:!RA[D.ra],updated_at:new Date().toISOString()}).eq("dept",D.ra);if(error)alert(error.message);return load()}
