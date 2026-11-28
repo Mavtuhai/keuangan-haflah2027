@@ -1,5 +1,5 @@
 // Cache cangkang aplikasi agar bisa dibuka offline. Permintaan ke Supabase/Google tidak pernah di-cache.
-const C="haflah-v2",SHELL=["./","index.html","manifest.webmanifest","icon-192.png","icon-512.png"];
+const C="haflah-v3",SHELL=["./","index.html","manifest.webmanifest","icon-192.png","icon-512.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(SHELL)));self.skipWaiting()});
 self.addEventListener("activate",e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x))))));
 self.addEventListener("fetch",e=>{const u=new URL(e.request.url);
