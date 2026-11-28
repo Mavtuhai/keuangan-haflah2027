@@ -219,7 +219,7 @@ function buildLpj(nb){let n=0,ti=0,to=0;const T=[];
   DEPT.forEach(([k,nm])=>{let i=0,s=0;const rows=live().filter(x=>x.dept===k&&x.kind==="out").map(x=>{s+=x.jumlah;return[++i,x.rincian,x.item,x.harga,x.jumlah]});to+=s;T.push({name:"PENGELUARAN – "+nm,head:["No","Rincian","Item","Harga","Jumlah"],rows,total:["Jumlah "+nm,s]})});
   T.push({name:"TOTAL PENGELUARAN SELURUH DEPARTEMEN",head:["Keterangan","Jumlah"],rows:[],total:["Total Pengeluaran",to]});
   T.push({name:"REKAPITULASI DANA",head:["Keterangan","Jumlah"],rows:[["Total Pemasukan",ti],["Total Pengeluaran",to]],total:["Sisa Keseluruhan",ti-to]});
-  return{title:"Laporan Pertanggungjawaban Keuangan Haflah 2027",file:"LPJ_Haflah_2027",tables:T,nb}}
+  return{title:"Laporan Pertanggungjawaban Keuangan Haflah 2027",file:"Keuangan_Haflah_2027",tables:T,nb}}
 function buildRab(d){let n=0,t=0;const rows=RB.filter(x=>x.dept===d&&!x.del).map(x=>{t+=x.jumlah;return[++n,x.rincian,x.item,x.harga,x.jumlah]});
   return{title:"Rencana Anggaran Biaya (RAB) "+NAME[d]+" – Haflah 2027",file:NAME[d].replace(/ /g,"_")+"_RAB",tables:[{head:["No","Rincian","Item","Harga","Jumlah"],rows,total:["Total",t]}],nb:""}}
 function buildRabAll(nb){const T=[],rk=[];let all=0;
